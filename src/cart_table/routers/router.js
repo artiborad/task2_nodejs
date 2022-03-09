@@ -1,9 +1,14 @@
 const express=require("express")
+const nodemailer = require("nodemailer");
 const router = express.Router()
 const cartProducts = require("../models/model") 
 const mongoose =require("mongoose")
 const stockProduct= require("../../stock_table/models/model")
 const { count } = require("../../stock_table/models/model")
+var fs = require('fs');
+var https = require('https');
+const { getMaxListeners } = require("process");
+
 
 router.get("/",async (req,res)=>{
     try{
@@ -94,47 +99,50 @@ router.get("/",async (req,res)=>{
 // })
 
 
-router.post("/1",async(req,res)=>{
-    const product= new cartProducts({
-        id:req.body.id,
-        product_id:req.body.product_id,
-        quantity:req.body.quantity
-    })
-    let p= product.save()
-    let cart = await  stockProduct.find({product_id:req.body.product_id});
-    console.log(cart)
-    cart = cart[0].toObject();
-    try{
-        if(cart){
-            let filter = cart.count - req.body.quantity;
-            console.log("filter:= "+filter)
-            if(filter>0){
-                let data = await stockProduct.findOneAndUpdate({product_id:req.body.product_id},{
-                    $inc : {count:-req.body.quantity}
-                }
-                )
-                res.send(data)
-            }else{
-                res.send({
-                    "msg":"product is not available "
-                })
-            }
+// router.post("/createcart",async(req,res)=>{
+//     const product= new cartProducts({
+//         id:req.body.id,
+//         product_id:req.body.product_id,
+//         quantity:req.body.quantity
+//     })
+//     let p= product.save()
+//     let cart = await  stockProduct.find({product_id:req.body.product_id});
+//     console.log(cart)
+//     cart = cart[0].toObject();
+//     try{
+//         if(cart){
+//             let filter = cart.count - req.body.quantity;
+//             console.log("filter:= "+filter)
+//             if(filter>0){
+//                 let data = await stockProduct.findOneAndUpdate({product_id:req.body.product_id},{
+//                     $inc : {count:-filter}
+//                 }
+//                 )
+//                 res.send(data)
+//             }else{
+//                 res.send({
+//                     "msg":"product is not available "
+//                 })
+//             }
             
-        }
-    } catch(e){
-            res.send(e.message)
-        } 
-})
+//         }
+//     } catch(e){
+//             res.send(e.message)
+//         } 
+// })
 
 
-router.patch("/1",async(req,res)=>{
+router.patch("/updatecart",async(req,res)=>{
     // const updates = Object.keys(req.body)
     // console.log(updates)
     
     try{
         const d= await cartProducts.find({product_id:req.body.product_id})
-        const d1 = await d[0].toObject()
-        // console.log("d1"+d1.quantity)
+        // const d1 = await d[0].toObject()
+        let d1 = d[0]
+        // console.log("d1"+d.quantity)
+        d1 = d1.quantity - req.body.quantity;
+        console.log("d1:=="+d1)
         const data = await  cartProducts.findOneAndUpdate({product_id:req.body.product_id},{
             quantity:req.body.quantity
         }) 
@@ -152,10 +160,11 @@ router.patch("/1",async(req,res)=>{
         
     //    if(d1.quantity<req.body.quantity){
         let final = await stockProduct.findOneAndUpdate({product_id:req.body.product_id},{
-            $inc : {count :-req.body.quantity}
+            $inc : {count : d1}
         })
         let ans = await final.save()
         res.send(ans)
+    // }
     //    }
     //    else{
     //     let final = await stockProduct.findOneAndUpdate({product_id:req.body.product_id},{
@@ -181,7 +190,36 @@ router.patch("/1",async(req,res)=>{
     }
 })
 
+router.patch("/patch",async(req,res)=>{
 
+    
+    try{
+        const d= await cartProducts.find({product_id:req.body.product_id})
+        
+        let d1 = d[0]
+        
+        d1 = d1.quantity - req.body.quantity;
+        console.log("d1:=="+d1)
+        const data = await  cartProducts.findOneAndUpdate({product_id:req.body.product_id},{
+            quantity:req.body.quantity
+        }) 
+        const a= await data.save()
+        
+        const data1 = await stockProduct.find({product_id:req.body.product_id})
+     
+        let ab = data1[0].toObject()
+        
+        let final = await stockProduct.findOneAndUpdate({product_id:req.body.product_id},{
+            $inc : {count : d1}
+        })
+        let ans = await final.save()
+        res.send(ans)
+    
+    } 
+    catch(e){
+        res.send(e.message)
+    }
+})
 // router.post("/2",async(req,res)=>{
 //             const product= new cartProducts({
 //                 id:req.body.id,
@@ -311,4 +349,130 @@ router.delete("/:id",async(req,res)=>{
         res.send(e)
     }
 })
+
+
+
+// router.post("/createcart",async (req,res)=>{
+//     const product= new cartProducts({
+//         id:req.body.id,
+//         product_id:req.body.product_id,
+//         quantity:req.body.quantity
+//     })
+//     let p= product.save()
+//     let cart = await  stockProduct.find({product_id:req.body.product_id});
+    
+    
+
+
+
+//     console.log(cart)
+//     cart = cart[0].toObject();
+//     let rec = cart.owner_email
+//     console.log(rec)
+//   //  let testAccount = await nodemailer.createTestAccount();
+//     let transporter =await nodemailer.createTransport({
+//         host: "smtp.gmail.com",
+//         port: 465,
+//         secure: true, 
+//         auth: {
+//           user:'developer5gloryautotech@gmail.com', 
+//           pass: 'Arti@321', 
+//         },
+//         tls:{
+//             rejectUnauthorized:false
+//         }
+//       })
+
+//     let info = await transporter.sendMail({
+//             from: 'developer5gloryautotech@gmail.com', 
+//             to: "yash.gloryautotech@gmail.com", 
+//             subject: "product info", 
+//             text: "hello", 
+//          });
+
+//     try{
+//         if(cart){
+//             let filter = cart.count - req.body.quantity;
+//             console.log("filter:= "+filter)
+//             if(filter>0){
+//                 let data = await stockProduct.findOneAndUpdate({product_id:req.body.product_id},{
+//                     $inc : {count:-filter}
+//                 }
+//                 )
+//                 res.send({data,"msgID":info.messageId,"url":nodemailer.getTestMessageUrl(info)})
+//             }else{
+//                 res.send({
+//                     "msg":"product is not available "
+//                 })
+//             }
+            
+//         }
+//     } catch(e){
+//             res.send(e.message)
+//         } 
+// })
+
+router.post("/createcart",async (req,res)=>{
+    const product= new cartProducts({
+        id:req.body.id,
+        product_id:req.body.product_id,
+        quantity:req.body.quantity
+    })
+    let p= product.save()
+    let cart = await  stockProduct.find({product_id:req.body.product_id});
+    
+    
+
+
+
+    console.log(cart)
+    cart = cart[0].toObject();
+    let rec = cart.owner_email
+    console.log(rec)
+  //  let testAccount = await nodemailer.createTestAccount();
+    let transporter =await nodemailer.createTransport({
+        host: "smtp.gmail.com",
+        port: 465,
+        secure: true, 
+        auth: {
+          user:'developer5gloryautotech@gmail.com', 
+          pass: 'Arti@321', 
+        },
+        tls:{
+            rejectUnauthorized:false
+        }
+      })
+
+    let info = await transporter.sendMail({
+            from: 'developer5gloryautotech@gmail.com', 
+            to:JSON.stringify(rec), 
+            subject: "product info", 
+            text:JSON.stringify(req.body), 
+         });
+
+    try{
+        if(cart){
+            let filter = cart.count - req.body.quantity;
+            console.log("filter:= "+filter)
+            if(filter>0){
+                let data = await stockProduct.findOneAndUpdate({product_id:req.body.product_id},{
+                    $inc : {count:-filter}
+                }
+                )
+                res.send({data,"msgID":info.messageId,"url":nodemailer.getTestMessageUrl(info)})
+            }else{
+                res.send({
+                    "msg":"product is not available "
+                })
+            }
+            
+        }
+    } catch(e){
+            res.send(e.message)
+        } 
+})
+
+
+
+
 module.exports = router;

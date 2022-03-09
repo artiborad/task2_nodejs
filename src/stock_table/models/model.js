@@ -1,4 +1,4 @@
-
+const validator=require("validator")
 const mongoose=require("mongoose")
 const stockSchema = mongoose.Schema({
     product_id:{
@@ -12,7 +12,19 @@ const stockSchema = mongoose.Schema({
     count:{
         type:Number,
         required:true
+    },
+    owner_email:{
+        type:String,
+        require:true,
+        validator(value){
+            if (!validator.isEmail(value)) {
+              throw new Error("email is invalid")
+            }
+          }
+
     }
+},{
+    timestamps:true
 })
 
 // const cartSchema = mongoose.Schema({
